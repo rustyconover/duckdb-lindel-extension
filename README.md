@@ -31,6 +31,8 @@ select crypto_hash('md5', 'test');
 
 `crypto_hash(hash_function_name:VARCHAR, value_to_hash:VARCHAR)`
 
+Calculate the value produced by applying a specified hash function.
+
 The supported hash functions are:
 
 - `blake2b-512`
@@ -54,7 +56,7 @@ There result is a lowercase hexadecimal representation of the hash result.
 
 DuckDb already has a function called `hash()` and a function for `sha256()`.
 
-## HMAC calculation.
+## HMAC calculation
 
 ```sql
 select crypto_hmac('sha2-256', 'secret key', 'secret message');
