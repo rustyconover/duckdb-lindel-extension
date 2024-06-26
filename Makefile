@@ -6,3 +6,6 @@ EXT_CONFIG=${PROJ_DIR}extension_config.cmake
 
 # Include the Makefile from extension-ci-tools
 include extension-ci-tools/makefiles/duckdb_extension.Makefile
+
+rust_binding_headers:
+	cd duckdb_crypto_rust && cbindgen --config ./cbindgen.toml --crate duckdb_crypto_rust --output ../src/include/rust.h

@@ -3,13 +3,7 @@ use std::ptr;
 use std::slice;
 use std::str;
 
-use blake2;
 use digest::{DynDigest, Mac};
-use md4;
-use md5;
-use sha1;
-use sha2;
-use sha3;
 
 use hmac::SimpleHmac;
 
@@ -29,22 +23,22 @@ fn use_hasher(hasher: &mut dyn DynDigest, data: &[u8]) -> Box<[u8]> {
 // DynDigest needs to be boxed here, since function return should be sized.
 fn select_hasher(s: &str) -> Option<Box<dyn DynDigest>> {
     match s {
-        "blake2b-512" => Some(Box::new(blake2::Blake2b512::default())),
-        "keccak224" => Some(Box::new(sha3::Keccak224::default())),
-        "keccak256" => Some(Box::new(sha3::Keccak256::default())),
-        "keccak384" => Some(Box::new(sha3::Keccak384::default())),
-        "keccak512" => Some(Box::new(sha3::Keccak512::default())),
-        "md4" => Some(Box::new(md4::Md4::default())),
-        "md5" => Some(Box::new(md5::Md5::default())),
-        "sha1" => Some(Box::new(sha1::Sha1::default())),
-        "sha2-224" => Some(Box::new(sha2::Sha224::default())),
-        "sha2-256" => Some(Box::new(sha2::Sha256::default())),
-        "sha2-384" => Some(Box::new(sha2::Sha384::default())),
-        "sha2-512" => Some(Box::new(sha2::Sha512::default())),
-        "sha3-224" => Some(Box::new(sha3::Sha3_224::default())),
-        "sha3-256" => Some(Box::new(sha3::Sha3_256::default())),
-        "sha3-384" => Some(Box::new(sha3::Sha3_384::default())),
-        "sha3-512" => Some(Box::new(sha3::Sha3_512::default())),
+        "blake2b-512" => Some(Box::<blake2::Blake2b512>::default()),
+        "keccak224" => Some(Box::<sha3::Keccak224>::default()),
+        "keccak256" => Some(Box::<sha3::Keccak256>::default()),
+        "keccak384" => Some(Box::<sha3::Keccak384>::default()),
+        "keccak512" => Some(Box::<sha3::Keccak512>::default()),
+        "md4" => Some(Box::<md4::Md4>::default()),
+        "md5" => Some(Box::<md5::Md5>::default()),
+        "sha1" => Some(Box::<sha1::Sha1>::default()),
+        "sha2-224" => Some(Box::<sha2::Sha224>::default()),
+        "sha2-256" => Some(Box::<sha2::Sha256>::default()),
+        "sha2-384" => Some(Box::<sha2::Sha384>::default()),
+        "sha2-512" => Some(Box::<sha2::Sha512>::default()),
+        "sha3-224" => Some(Box::<sha3::Sha3_224>::default()),
+        "sha3-256" => Some(Box::<sha3::Sha3_256>::default()),
+        "sha3-384" => Some(Box::<sha3::Sha3_384>::default()),
+        "sha3-512" => Some(Box::<sha3::Sha3_512>::default()),
         _ => None,
     }
 }
@@ -92,7 +86,7 @@ pub extern "C" fn hashing_varchar(
     let hash_name_str = make_str!(hash_name, hash_name_len);
     let content_slice = unsafe { slice::from_raw_parts(content as *const c_uchar, len) };
 
-    match select_hasher(&hash_name_str) {
+    match select_hasher(hash_name_str) {
         Some(mut hasher) => {
             let hash_result = use_hasher(&mut *hasher, content_slice);
 
@@ -218,24 +212,16 @@ pub extern "C" fn hmac_varchar(
                 available_hash_algorithms().join(", ")
             ))
             .unwrap();
-            return match CString::new(error_message) {
+            match CString::new(error_message) {
                 Ok(c_string) => ResultCString::Err(c_string.into_raw()),
                 Err(_) => ResultCString::Err(ptr::null_mut()),
-            };
+            }
         }
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+mod tests {}
 
 // Setup the global allocator to use the duckdb internal malloc and free functions.
 extern "C" {
@@ -260,7 +246,7 @@ impl DuckDBAllocator {
 
 unsafe impl GlobalAlloc for DuckDBAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        duckdb_malloc(layout.size() as usize) as *mut u8
+        duckdb_malloc(layout.size()) as *mut u8
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {

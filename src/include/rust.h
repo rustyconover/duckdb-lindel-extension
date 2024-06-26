@@ -46,7 +46,7 @@ ResultCString hashing_varchar(const char *hash_name,
                               const char *content,
                               size_t len);
 
-/// Create a HMAC using the specified hash function
+/// Create a HMAC using the specified hash function and key.
 ResultCString hmac_varchar(const char *hash_name,
                            size_t hash_name_len,
                            const char *key,
