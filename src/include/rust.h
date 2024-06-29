@@ -6,27 +6,6 @@
 #include <new>
 
 
-struct ResultCString {
-  enum class Tag {
-    Ok,
-    Err,
-  };
-
-  struct Ok_Body {
-    char *_0;
-  };
-
-  struct Err_Body {
-    char *_0;
-  };
-
-  Tag tag;
-  union {
-    Ok_Body ok;
-    Err_Body err;
-  };
-};
-
 
 extern "C" {
 
@@ -40,18 +19,26 @@ extern void duckdb_free(void *ptr);
 /// size: The number of bytes to allocate.  returns: A pointer to the allocated memory region.
 extern void *duckdb_malloc(size_t size);
 
-/// Hash a varchar using the specified hashing algorithm.
-ResultCString hashing_varchar(const char *hash_name,
-                              size_t hash_name_len,
-                              const char *content,
-                              size_t len);
+void hilbert_encode_u16_var(const uint16_t *ptr, size_t len, void *result);
 
-/// Create a HMAC using the specified hash function and key.
-ResultCString hmac_varchar(const char *hash_name,
-                           size_t hash_name_len,
-                           const char *key,
-                           size_t key_len,
-                           const char *content,
-                           size_t len);
+void hilbert_encode_u32_var(const uint32_t *ptr, size_t len, void *result);
+
+void hilbert_encode_u64_var(const uint64_t *ptr, size_t len, void *result);
+
+void hilbert_encode_u8_var(const uint8_t *ptr, size_t len, void *result);
+
+void morton_encode_u16_var(const uint16_t *ptr, size_t len, void *result);
+
+void morton_encode_u32_var(const uint32_t *ptr, size_t len, void *result);
+
+void morton_encode_u64_var(const uint64_t *ptr, size_t len, void *result);
+
+void morton_encode_u8_var(const uint8_t *ptr, size_t len, void *result);
+
+void perform_decode(uint8_t encoding_type,
+                    uint8_t element_bit_width,
+                    const void *src,
+                    void *dest,
+                    size_t dest_len);
 
 } // extern "C"

@@ -1,0 +1,28 @@
+# name: test/sql/lindel.test
+# description: test lindel extension
+# group: [lindel]
+
+# Before we load the extension, this will fail
+statement error
+SELECT hilbert_encode([1, 2, 3]::tinyint[3]);
+----
+Catalog Error: Scalar Function with name hilbert_encode does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require lindel
+
+# Confirm the extension works
+query I
+SELECT hilbert_encode([1, 2, 3]::tinyint[3]);
+----
+22
+
+query I
+SELECT morton_encode([1, 2, 3]::tinyint[3]);
+----
+29
+
+query I
+select hilbert_decode(22::uinteger, 3, false, false)
+----
+[1, 2, 3]
