@@ -27,7 +27,7 @@ When you have a query pattern across multiple numeric or short text columns or f
 
 Often when I'm producing data that will be stored in Parquet I'd store the data using this ordering:
 
-```
+```sql
 COPY (
   select * from 'source.csv'
   order by
