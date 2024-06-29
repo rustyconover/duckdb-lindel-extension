@@ -2,7 +2,7 @@
 
 ---
 
-This extension, `lindel`[1], adds functions that perform linearisation and delinearisation for arrays of values in DuckDB's SQL engine.
+This extension, `lindel`, adds functions that perform linearisation and delinearisation for arrays of values in DuckDB's SQL engine.
 
 ## What is linearisation?
 
