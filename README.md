@@ -2,30 +2,27 @@
 
 ---
 
-This extension, `lindel`, adds functions that perform linearisation and delinearisation for arrays of values in DuckDB's SQL engine.
+
+This `lindel` extension adds functions for linearisation and delinearisation of arrays in DuckDB's SQL engine.
 
 ## What is linearisation?
 
-Linearization refers to the process of mapping multi-dimensional data into a one-dimensional sequence while preserving locality. This is often used to improve the efficiency of data structures and algorithms that deal with spatial data, such as in databases, geographic information systems (GIS), and memory caches.
+Linearisation maps multi-dimensional data into a one-dimensional sequence while preserving locality, enhancing the efficiency of data structures and algorithms for spatial data, such as in databases, GIS, and memory caches.
 
 > "The principle of locality states that programs tend to reuse data and instructions they have used recently."
 
-In SQL you are often sorting by a time column or by unique identifier and often that is all that is necessary to handle the query patterns of the data. But sometimes the data is queried by more than one column/field, some examples of this that are known to the author are:
+In SQL, sorting by a single field (e.g., time or identifier) is often sufficient, but sometimes queries involve multiple fields, such as:
 
-- Queries by time and identifier (historical trading data across baskets of securities)
+- Time and identifier (historical trading data)
 - Latitude and Longitude (GIS applications)
-- Latitude, Longitude and Altitude (tracking flights)
-- Latitude, Longitude, Altitude, Time (tracking flight history over areas)
+- Latitude, Longitude, and Altitude (flight tracking)
+- Latitude, Longitude, Altitude, and Time (flight history)
 
-Just sorting a table by a single field's value doesn't lead to optimal query performance.  If you sort just by latitude, and you query by longitude you're going to read the entire table to process that query.
-
-Linearisation can take multiple field values and map all of those values into to single numeric value, while preserving the locality of the mapped values.  By preserving locality it means that values that were considered "close" in the unmapped representation are still numerically close in the mapped representation.
+Sorting by a single field isn't optimal for multi-field queries. Linearisation maps multiple field values into a single numeric value, preserving locality—meaning values close in the original representation remain close in the mapped representation.
 
 ## When would I use this?
 
-When you have a query pattern across multiple numeric or short text columns or fields and you are using Parquet you should consider sorting rows using Hilbert encoding.
-
-Often when I'm producing data that will be stored in Parquet I'd store the data using this ordering:
+For query patterns across multiple numeric or short text columns, consider sorting rows using Hilbert encoding when storing data in Parquet:
 
 ```sql
 COPY (
@@ -50,28 +47,29 @@ This extension offers two different encoding types, Hilbert and Morton encoding.
 
 ### Hilbert Encoding
 
-Hilbert encoding uses the Hilbert curve, a continuous fractal space-filling curve named after mathematician David Hilbert. Unlike Morton encoding, which uses bit interleaving, Hilbert encoding rearranges the coordinates based on the Hilbert curve’s path.
+Hilbert encoding uses the Hilbert curve, a continuous fractal space-filling curve named after David Hilbert. It rearranges coordinates based on the Hilbert curve's path, preserving spatial locality better than Morton encoding.
 
 ### Morton Encoding (Z-order Curve)
 
-Morton encoding, also known as the Z-order curve, is a method of interleaving the binary representations of multiple coordinates into a single integer. It derives its name from the mathematician and computer scientist Glenn K. Morton.
+Morton encoding, also known as the Z-order curve, interleaves the binary representations of coordinates into a single integer. It is named after Glenn K. Morton.
 
 **Locality:** Hilbert encoding generally preserves locality better than Morton encoding, making it preferable for applications where spatial proximity matters.
 
 ## API
 
-The types that can be encoded are any signed or unsigned integer type along with any float or double.  This is referred to as an `INPUT_TYPE`.
+### Encoding
 
-The output will be the smallest unsigned integer type that can represent the data type and number of values passed in the input array.
+**Supported types:** Any signed or unsigned integer, float, or double (`INPUT_TYPE`).
+**Output:** The smallest unsigned integer type that can represent the input array.
 
 ### Encoding Functions
 
 * `hilbert_encode(ARRAY[INPUT_TYPE, 1-16])`
 * `morton_encode(ARRAY[INPUT_TYPE, 1-16])`
 
-Since the largest value that can be returned by this function is a 128-bit `UHUGEINT`, there are restrictions about the maximum number of elements that can be encoded.  The input array size is validated to ensure that all input elements will be contained in the up to 128-bit output.
+Output is limited to a 128-bit `UHUGEINT`. The input array size is validated to ensure it fits within this limit.
 
-| INPUT TYPE | Maximum Number of Elements | Output Type (depends on number of elements) |
+| Input Type | Maximum Number of Elements | Output Type (depends on number of elements) |
 |---|--|-------------|
 | `UTINYINT`   | 16 | 1: `UTINYINT`<br/>2: `USMALLINT`<br/>3-4: `UINTEGER`<br/> 4-8: `UBIGINT`<br/> 8-16: `UHUGEINT`|
 | `USMALLINT`  | 8 | 1: `USMALLINT`<br/>2: `UINTEGER`<br/>3-4: `UBIGINT`<br/>4-8: `UHUGEINT` |
@@ -179,27 +177,21 @@ select hilbert_encode([ord(x) for x in split('abcd', '')]::tinyint[4]);
 
 ```
 
-Currently, the input of `hilbert_encode()` and `morton_encode()` is that the input
-DuckDB arrays, which means each array element consists of the same size.  If you want to encode
-different sized types it is possible, but you need to always break up the larger data types
-into the units of the smallest data type.  **Your mileage may vary.**
+Currently, the input for `hilbert_encode()` and `morton_encode()` functions in DuckDB requires that all elements in the input array be of the same size. If you need to encode different sized types, you must break up larger data types into units of the smallest data type. Results may vary.
 
 ### Decoding Functions
 
 * `hilbert_encode(ANY_UNSIGNED_INTEGER, TINYINT, BOOLEAN, BOOLEAN)`
 * `morton_encode(ANY_UNSIGNED_INTEGER, TINYINT, BOOLEAN, BOOLEAN)`
 
-The decoding functions take three parameters:
+The decoding functions take four parameters:
 
-The first parameter is the value to be decoded, this is always an unsigned integer type.
+1. **Value to be decoded:** This is always an unsigned integer type.
+2. **Number of elements to decode:** This is a `TINYINT` specifying how many elements should be decoded.
+3. **Float return type:** This `BOOLEAN` indicates whether the values should be returned as floats (REAL or DOUBLE). Set to true to enable this.
+4. **Unsigned return type:** This `BOOLEAN` indicates whether the values should be unsigned if not using floats.
 
-The second parameter is the number of elements that should be decoded from the value.
-
-The third parameter is a boolean that indicates that the values should be returned as floats (either `REAL` or `DOUBLE`) if set to true.
-
-The fourth parameter is a boolean that indicates that the values should be unsinged if not using floats.
-
-The actual return types of these functions will always be an array where the type of the element of the array is determined by the number of elements requested and if "float" handling is enabled by the third parameter.
+The return type of these functions is always an array, with the element type determined by the number of elements requested and whether "float" handling is enabled by the third parameter.
 
 ### Examples
 
