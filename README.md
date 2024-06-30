@@ -33,6 +33,12 @@ Numerous articles describe the benefits of applying a Z-Ordering/Hilbert orderin
 - [https://blog.cloudera.com/speeding-up-queries-with-z-order/](https://blog.cloudera.com/speeding-up-queries-with-z-order/)
 - [https://www.linkedin.com/pulse/z-order-visualization-implementation-nick-karpov/](https://www.linkedin.com/pulse/z-order-visualization-implementation-nick-karpov/)
 
+From one of the articles:
+
+![Delta Lake Query Speed Improvement from using Z-Ordering](https://delta.io/static/c1801cd120999d77de0ee51b227acccb/a13c9/image1.png)
+
+Your particular performance improvements will vary, but for some query patterns Z-Ordering and Hilbert ordering will make quite a big difference.
+
 ## When would I use this?
 
 For query patterns across multiple numeric or short text columns, consider sorting rows using Hilbert encoding when storing data in Parquet:
