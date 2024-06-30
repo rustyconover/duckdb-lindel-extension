@@ -25,7 +25,7 @@ Sorting by a single field isn't optimal for multi-field queries. Linearization m
 
 #### Where has this been used before?
 
-DataBricks has long supported Z-Ordering (they also now default to using the Hilbert curve for the ordering).  This [video explains how Delta Lake querying can go faster when the data is Z-Ordered.](https://www.youtube.com/watch?v=A1aR1A8OwOU) This extension also allows DuckDB to write files with the same ordering optimization.
+DataBricks has long supported Z-Ordering (they also now default to using the Hilbert curve for the ordering).  This [video explains how Delta Lake queries are faster when the data is Z-Ordered.](https://www.youtube.com/watch?v=A1aR1A8OwOU) This extension also allows DuckDB to write files with the same ordering optimization.
 
 Numerous articles describe the benefits of applying a Z-Ordering/Hilbert ordering to data for query performance.
 
