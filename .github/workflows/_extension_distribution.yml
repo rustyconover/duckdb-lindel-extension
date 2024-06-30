@@ -168,6 +168,11 @@ jobs:
         with:
           cache: false
 
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.5'
+
       - name: Build extension
         env:
           GEN: ninja
