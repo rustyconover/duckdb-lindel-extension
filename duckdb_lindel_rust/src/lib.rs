@@ -90,8 +90,11 @@ macro_rules! encode_and_store {
 
 macro_rules! generic_encode_u8_var {
     ($func_name:ident, $encoding_expr: expr) => {
+        /// # Safety
+        ///
+        /// This function is unsafe because it dereferences raw pointers.
         #[no_mangle]
-        pub extern "C" fn $func_name(ptr: *const u8, len: usize, result: *mut c_void) -> () {
+        pub unsafe extern "C" fn $func_name(ptr: *const u8, len: usize, result: *mut c_void) -> () {
             let args = unsafe {
                 assert!(!ptr.is_null());
                 std::slice::from_raw_parts(ptr, len)
@@ -215,8 +218,15 @@ generic_encode_u8_var!(morton_encode_u8_var, lindel::morton_encode);
 
 macro_rules! generic_encode_u16_var {
     ($func_name:ident, $encoding_expr: expr) => {
+        /// # Safety
+        ///
+        /// This function is unsafe because it dereferences raw pointers.
         #[no_mangle]
-        pub extern "C" fn $func_name(ptr: *const u16, len: usize, result: *mut c_void) -> () {
+        pub unsafe extern "C" fn $func_name(
+            ptr: *const u16,
+            len: usize,
+            result: *mut c_void,
+        ) -> () {
             let args = unsafe {
                 assert!(!ptr.is_null());
                 std::slice::from_raw_parts(ptr, len)
@@ -267,8 +277,15 @@ generic_encode_u16_var!(morton_encode_u16_var, lindel::morton_encode);
 
 macro_rules! generic_encode_u32_var {
     ($func_name:ident, $encoding_expr: expr) => {
+        /// # Safety
+        ///
+        /// This function is unsafe because it dereferences raw pointers.
         #[no_mangle]
-        pub extern "C" fn $func_name(ptr: *const u32, len: usize, result: *mut c_void) -> () {
+        pub unsafe extern "C" fn $func_name(
+            ptr: *const u32,
+            len: usize,
+            result: *mut c_void,
+        ) -> () {
             let args = unsafe {
                 assert!(!ptr.is_null());
                 std::slice::from_raw_parts(ptr, len)
@@ -295,8 +312,15 @@ generic_encode_u32_var!(morton_encode_u32_var, lindel::morton_encode);
 
 macro_rules! generic_encode_u64_var {
     ($func_name:ident, $encoding_expr: expr) => {
+        /// # Safety
+        ///
+        /// This function is unsafe because it dereferences raw pointers.
         #[no_mangle]
-        pub extern "C" fn $func_name(ptr: *const u64, len: usize, result: *mut c_void) -> () {
+        pub unsafe extern "C" fn $func_name(
+            ptr: *const u64,
+            len: usize,
+            result: *mut c_void,
+        ) -> () {
             let args = unsafe {
                 assert!(!ptr.is_null());
                 std::slice::from_raw_parts(ptr, len)
