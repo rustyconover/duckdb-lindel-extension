@@ -1,4 +1,4 @@
-# Lindel (lineariser-delineariser) Extension for DuckDB
+# Lindel (linearizer-delinearizer) Extension for DuckDB
 
 ---
 
