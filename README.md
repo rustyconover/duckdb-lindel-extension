@@ -271,12 +271,17 @@ select hilbert_decode(8002395622101954260073409974::UHUGEINT, 3, True, False) as
 │ [1.0, 5.0, 6.0] │
 └─────────────────┘
 ```
+## Credits
+
+1. This DuckDB extension utilizes and is named after the [`lindel`](https://crates.io/crates/lindel) Rust crate created by [DoubleHyphen](https://github.com/DoubleHyphen).
+
+2. It also uses the [DuckDB Extension Template](https://github.com/duckdb/extension-template).
+
+3. This extension uses [Corrosion](https://github.com/corrosion-rs/corrosion) to combine CMake with a Rust/Cargo build process.
+
+4. I've gotten a lot of help from the generous DuckDB developer community.
 
 ### Build Architecture
-
-This repository is based on https://github.com/duckdb/extension-template, check it out if you want to build and ship your own DuckDB extension.
-
-The unique nature of this extension is that it combines a Rust crate (`duckdb_lindel_rust`) with the DuckDB extension template, using a tool called [Corrosion](https://github.com/corrosion-rs/corrosion).  Corrosion handles building the embedded Rust crate as a library, then facilitates the Rust crate being linked link to the DuckDB extension.
 
 For the DuckDB extension to call the Rust code a tool called `cbindgen` is used to write the C++ headers for the exposed Rust interface.
 
