@@ -2,23 +2,36 @@
 
 ---
 
+![Ducks filling Space-Filling Curves](./docs/space-filling-curve-ducks.jpg)
 
-This `lindel` extension adds functions for linearisation and delinearisation of arrays in DuckDB's SQL engine.
+This `lindel` extension adds functions for the [linearization](https://en.wikipedia.org/wiki/Linearization) and delinearization of numeric arrays in [DuckDB](https://www.duckdb.org).  It allows you to order multi-dimensional data using space-filling curves.
 
-## What is linearisation?
+## What is linearization?
 
-Linearisation maps multi-dimensional data into a one-dimensional sequence while preserving locality, enhancing the efficiency of data structures and algorithms for spatial data, such as in databases, GIS, and memory caches.
+<image align="right" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Hilbert-curve_rounded-gradient-animated.gif/440px-Hilbert-curve_rounded-gradient-animated.gif" alt="An animation of the Hilbert Curve from Wikipedia" width="200px"/>
+
+[Linearization](https://en.wikipedia.org/wiki/Linearization) maps multi-dimensional data into a one-dimensional sequence while [preserving locality](https://en.wikipedia.org/wiki/Locality_of_reference), enhancing the efficiency of data structures and algorithms for spatial data, such as in databases, GIS, and memory caches.
 
 > "The principle of locality states that programs tend to reuse data and instructions they have used recently."
 
-In SQL, sorting by a single field (e.g., time or identifier) is often sufficient, but sometimes queries involve multiple fields, such as:
+In SQL, sorting by a single column (e.g., time or identifier) is often sufficient, but sometimes queries involve multiple fields, such as:
 
 - Time and identifier (historical trading data)
 - Latitude and Longitude (GIS applications)
 - Latitude, Longitude, and Altitude (flight tracking)
 - Latitude, Longitude, Altitude, and Time (flight history)
 
-Sorting by a single field isn't optimal for multi-field queries. Linearisation maps multiple field values into a single numeric value, preserving locality—meaning values close in the original representation remain close in the mapped representation.
+Sorting by a single field isn't optimal for multi-field queries. Linearization maps multiple fields into a single value, while preserving locality—meaning values close in the original representation remain close in the mapped representation.
+
+#### Where has this been used before?
+
+DataBricks has long supported Z-Ordering (they also now default to using the Hilbert curve for the ordering).  This [video explains how Delta Lake querying can go faster when the data is Z-Ordered.](https://www.youtube.com/watch?v=A1aR1A8OwOU) This extension also allows DuckDB to write files with the same ordering optimization.
+
+Numerous articles describe the benefits of applying a Z-Ordering/Hilbert ordering to data for query performance.
+
+- [https://delta.io/blog/2023-06-03-delta-lake-z-order/](https://delta.io/blog/2023-06-03-delta-lake-z-order/)
+- [https://blog.cloudera.com/speeding-up-queries-with-z-order/](https://blog.cloudera.com/speeding-up-queries-with-z-order/)
+- [https://www.linkedin.com/pulse/z-order-visualization-implementation-nick-karpov/](https://www.linkedin.com/pulse/z-order-visualization-implementation-nick-karpov/)
 
 ## When would I use this?
 
@@ -37,17 +50,23 @@ TO 'example.parquet' (FORMAT PARQUET)
 COPY (
   select * from 'source.csv'
   order by
-  hilbert_encode([source_data.lat, source_data.long]::double[2])
+  hilbert_encode([source_data.lat, source_data.lon]::double[2])
 ) TO 'example.parquet' (FORMAT PARQUET)
 ```
 
+The Parquet file format stores statistics for each row group. Since rows are sorted with locality into these row groups the query execution may be able to skip row groups that contain no relevant rows, leading to faster query execution times.
+
 ## Encoding Types
 
-This extension offers two different encoding types, Hilbert and Morton encoding.
+This extension offers two different encoding types, [Hilbert](https://en.wikipedia.org/wiki/Hilbert_curve) and [Morton](https://en.wikipedia.org/wiki/Z-order_curve) encoding.
 
 ### Hilbert Encoding
 
-Hilbert encoding uses the Hilbert curve, a continuous fractal space-filling curve named after David Hilbert. It rearranges coordinates based on the Hilbert curve's path, preserving spatial locality better than Morton encoding.
+Hilbert encoding uses the Hilbert curve, a continuous fractal space-filling curve named after [David Hilbert](https://en.wikipedia.org/wiki/David_Hilbert). It rearranges coordinates based on the Hilbert curve's path, preserving spatial locality better than Morton encoding.
+
+This is a great explanation of the [Hilbert curve](https://www.youtube.com/watch?v=3s7h2MHQtxc).
+
+
 
 ### Morton Encoding (Z-order Curve)
 
@@ -130,46 +149,46 @@ Encoding doesn't only work with integers it can also be used with floats.
 
 ```sql
 -- Encode two 32-bit floats into one uint64
-select hilbert_encode([37.8, .2]::float[2]);
-┌─────────────────────────────────────────────────────────────┐
-│ hilbert_encode(CAST(main.list_value(37.8, .2) AS FLOAT[2])) │
-│                           uint64                            │
-├─────────────────────────────────────────────────────────────┤
-│                                         2303654869236839926 │
-└─────────────────────────────────────────────────────────────┘
+select hilbert_encode([37.8, .2]::float[2]) as hilbert;
+┌─────────────────────┐
+│       hilbert       │
+│       uint64        │
+├─────────────────────┤
+│ 2303654869236839926 │
+└─────────────────────┘
 
 -- Since doubles use 64 bits of precision the encoding
 -- must result in a uint128
 
- select hilbert_encode([37.8, .2]::double[2]);
-┌──────────────────────────────────────────────────────────────┐
-│ hilbert_encode(CAST(main.list_value(37.8, .2) AS DOUBLE[2])) │
-│                           uint128                            │
-├──────────────────────────────────────────────────────────────┤
-│                       42534209309512799991913666633619307890 │
-└──────────────────────────────────────────────────────────────┘
+select hilbert_encode([37.8, .2]::double[2]) as hilbert;
+┌────────────────────────────────────────┐
+│                hilbert                 │
+│                uint128                 │
+├────────────────────────────────────────┤
+│ 42534209309512799991913666633619307890 │
+└────────────────────────────────────────┘
 
 -- 3 dimensional encoding.
-select hilbert_encode([1.0, 5.0, 6.0]::float[3]);
-┌──────────────────────────────────────────────────────────────────┐
-│ hilbert_encode(CAST(main.list_value(1.0, 5.0, 6.0) AS FLOAT[3])) │
-│                             uint128                              │
-├──────────────────────────────────────────────────────────────────┤
-│                                     8002395622101954260073409974 │
-└──────────────────────────────────────────────────────────────────┘
+select hilbert_encode([1.0, 5.0, 6.0]::float[3]) as hilbert;
+┌──────────────────────────────┐
+│           hilbert            │
+│           uint128            │
+├──────────────────────────────┤
+│ 8002395622101954260073409974 │
+└──────────────────────────────┘
 ```
 
 Not to be left out you can also encode strings.
 
 ```sql
 
-select hilbert_encode([ord(x) for x in split('abcd', '')]::tinyint[4]);
-┌───────────────────────────────────────────────────────────────────────────────────────┐
-│ hilbert_encode(CAST(main.list_apply(split('abcd', ''), (x -> ord(x))) AS TINYINT[4])) │
-│                                        uint32                                         │
-├───────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                             178258816 │
-└───────────────────────────────────────────────────────────────────────────────────────┘
+select hilbert_encode([ord(x) for x in split('abcd', '')]::tinyint[4]) as hilbert;
+┌───────────┐
+│  hilbert  │
+│  uint32   │
+├───────────┤
+│ 178258816 │
+└───────────┘
 
 --- This splits the string 'abcd' by character, then converts each character into
 --- its ordinal representation, finally converts them all to 8 bit integers and then
@@ -177,12 +196,12 @@ select hilbert_encode([ord(x) for x in split('abcd', '')]::tinyint[4]);
 
 ```
 
-Currently, the input for `hilbert_encode()` and `morton_encode()` functions in DuckDB requires that all elements in the input array be of the same size. If you need to encode different sized types, you must break up larger data types into units of the smallest data type. Results may vary.
+Currently, the input for `hilbert_encode()` and `morton_encode()` functions in DuckDB requires that all elements in the input array be of the same size. If you need to encode different-sized types, you must break up larger data types into units of the smallest data type. Results may vary.
 
 ### Decoding Functions
 
-* `hilbert_encode(ANY_UNSIGNED_INTEGER, TINYINT, BOOLEAN, BOOLEAN)`
-* `morton_encode(ANY_UNSIGNED_INTEGER, TINYINT, BOOLEAN, BOOLEAN)`
+* `hilbert_encode(ANY_UNSIGNED_INTEGER_TYPE, TINYINT, BOOLEAN, BOOLEAN)`
+* `morton_encode(ANY_UNSIGNED_INTEGER_TYPE, TINYINT, BOOLEAN, BOOLEAN)`
 
 The decoding functions take four parameters:
 

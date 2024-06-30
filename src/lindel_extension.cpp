@@ -322,6 +322,147 @@ static unique_ptr<FunctionData> lindelEncodeArrayBind(ClientContext &context, Sc
     {
         throw NotImplementedException("Unknown function name in lindelEncodeBind");
     }
+
+    // Now deal with validating the input type
+    auto &left_type = arguments[0]->return_type;
+
+    // This is the number of elements in the output array, not the number of rows being procssed.
+    auto input_number_of_elements = ArrayType::GetSize(left_type);
+
+    // The type of the elements in the output array this will either be an integer type or a float type.
+	auto input_child_type = ArrayType::GetChildType(left_type);
+
+    switch(input_child_type.id()) {
+        case LogicalTypeId::DOUBLE:
+        {
+            switch(input_number_of_elements) {
+                case 1:
+                    bound_function.return_type = LogicalType::UBIGINT;
+                    break;
+                case 2:
+                    bound_function.return_type = LogicalType::UHUGEINT;
+                    break;
+                default:
+                    throw InvalidInputException("hilbert_encode()/morton_encode() only supports arrays of lengths of 1 or 2 for DOUBLE.");
+            }
+        }
+        break;
+        case LogicalTypeId::FLOAT:
+        {
+            switch(input_number_of_elements) {
+                case 1:
+                    bound_function.return_type = LogicalType::UINTEGER;
+                    break;
+                case 2:
+                    bound_function.return_type = LogicalType::UBIGINT;
+                    break;
+                case 3:
+                case 4:
+                    bound_function.return_type = LogicalType::UHUGEINT;
+                    break;
+                default:
+                    throw InvalidInputException("hilbert_encode()/morton_encode() only supports arrays of lengths 1-4 for FLOAT.");
+            }
+        }
+        break;
+        case LogicalTypeId::UBIGINT:
+        case LogicalTypeId::BIGINT:
+        {
+            switch(input_number_of_elements) {
+                case 1:
+                    bound_function.return_type = LogicalType::UBIGINT;
+                    break;
+                case 2:
+                    bound_function.return_type = LogicalType::UHUGEINT;
+                    break;
+                default:
+                    throw InvalidInputException("hilbert_encode()/morton_encode() only supports arrays of lengths of 1 or 2 for BIGINT/UBIGINT.");
+            }
+        }
+        break;
+        case LogicalTypeId::UINTEGER:
+        case LogicalTypeId::INTEGER:
+        {
+            switch(input_number_of_elements) {
+                case 1:
+                    bound_function.return_type = LogicalType::UINTEGER;
+                    break;
+                case 2:
+                    bound_function.return_type = LogicalType::UBIGINT;
+                    break;
+                case 3:
+                case 4:
+                    bound_function.return_type = LogicalType::UHUGEINT;
+                    break;
+                default:
+                    throw InvalidInputException("hilbert_encode()/morton_encode() only supports arrays of lengths 1-4 for UINTEGER/INTEGER.");
+            }
+        }
+        break;
+        case LogicalTypeId::USMALLINT:
+        case LogicalTypeId::SMALLINT:
+        {
+            switch(input_number_of_elements) {
+                case 1: //16
+                    bound_function.return_type = LogicalType::USMALLINT;
+                    break;
+                case 2: //32
+                    bound_function.return_type = LogicalType::UINTEGER;
+                    break;
+                case 3:
+                case 4:
+                    bound_function.return_type = LogicalType::UBIGINT;
+                    break;
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                    bound_function.return_type = LogicalType::UHUGEINT;
+                    break;
+                default:
+                    throw InvalidInputException("hilbert_encode()/morton_encode() only supports arrays of lengths 1-8 for USMALLINT/SMALLINT.");
+            }
+        }
+        break;
+        case LogicalTypeId::UTINYINT:
+        case LogicalTypeId::TINYINT:
+        {
+            switch(input_number_of_elements) {
+                case 1:
+                    bound_function.return_type = LogicalType::UTINYINT;
+                    break;
+                case 2:
+                    bound_function.return_type = LogicalType::USMALLINT;
+                    break;
+                case 3:
+                case 4:
+                    bound_function.return_type = LogicalType::UINTEGER;
+                    break;
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                    bound_function.return_type = LogicalType::UBIGINT;
+                    break;
+                case 9:
+                case 10:
+                case 11:
+                case 12:
+                case 13:
+                case 14:
+                case 15:
+                case 16:
+                    bound_function.return_type = LogicalType::UHUGEINT;
+                    break;
+                default:
+                    throw InvalidInputException("hilbert_encode()/morton_encode() only supports arrays of lengths 1-16 for UTINYINT/TINYINT.");
+            }
+        }
+        break;
+        default:
+            throw InvalidInputException("hilbert_encode()/morton_encode() only supports arrays of types DOUBLE, FLOAT, UBIGINT, BIGINT, UINTEGER, INTEGER, USMALLINT, SMALLINT, UTINYINT, TINYINT");
+    }
+
     return bind_data;
 }
 
@@ -537,104 +678,10 @@ static void LoadInternal(DatabaseInstance &instance) {
     ScalarFunctionSet hilbert_encode("hilbert_encode");
     ScalarFunctionSet morton_encode("morton_encode");
 
-    using LT = LogicalType; // Alias for LogicalType
     using SF = ScalarFunction; // Alias for ScalarFunction
 
-    // Define a helper struct to hold type, dimension, and return type
-    struct FunctionSignature {
-        LT element_type;
-        int dimension;
-        LT return_type;
-    };
-
-    // Define all the function signatures for arrays that can be encoded
-    const std::vector<FunctionSignature> encoding_array_signatures = {
-        // FLOATS are 32 bits
-        {LT::FLOAT, 1, LT::UINTEGER},
-        {LT::FLOAT, 2, LT::UBIGINT},
-        {LT::FLOAT, 3, LT::UHUGEINT},
-        {LT::FLOAT, 4, LT::UHUGEINT},
-
-        // DOUBLES are 64 bits
-        {LT::DOUBLE, 1, LT::UBIGINT},
-        {LT::DOUBLE, 2, LT::UHUGEINT},
-
-        // BIGINT 64 bit
-        {LT::BIGINT, 1, LT::BIGINT},
-        {LT::BIGINT, 2, LT::UHUGEINT},
-        {LT::UBIGINT, 1, LT::UBIGINT},
-        {LT::UBIGINT, 2, LT::UHUGEINT},
-
-        // INTEGER 32 bit
-        {LT::INTEGER, 1, LT::INTEGER},
-        {LT::INTEGER, 2, LT::UBIGINT},
-        {LT::INTEGER, 3, LT::UHUGEINT},
-        {LT::INTEGER, 4, LT::UHUGEINT},
-        {LT::UINTEGER, 1, LT::UINTEGER},
-        {LT::UINTEGER, 2, LT::UBIGINT},
-        {LT::UINTEGER, 3, LT::UHUGEINT},
-        {LT::UINTEGER, 4, LT::UHUGEINT},
-
-        // SMALLINT 16 bit
-        {LT::SMALLINT, 1, LT::USMALLINT},
-        {LT::SMALLINT, 2, LT::UINTEGER},
-        {LT::SMALLINT, 3, LT::UBIGINT},
-        {LT::SMALLINT, 4, LT::UBIGINT},
-        {LT::SMALLINT, 5, LT::UHUGEINT},
-        {LT::SMALLINT, 6, LT::UHUGEINT},
-        {LT::SMALLINT, 7, LT::UHUGEINT},
-        {LT::SMALLINT, 8, LT::UHUGEINT},
-
-        {LT::USMALLINT, 1, LT::USMALLINT},
-        {LT::USMALLINT, 2, LT::UINTEGER},
-        {LT::USMALLINT, 3, LT::UBIGINT},
-        {LT::USMALLINT, 4, LT::UBIGINT},
-        {LT::USMALLINT, 5, LT::UHUGEINT},
-        {LT::USMALLINT, 6, LT::UHUGEINT},
-        {LT::USMALLINT, 7, LT::UHUGEINT},
-        {LT::USMALLINT, 8, LT::UHUGEINT},
-
-        // TINYINT 8 bit
-        {LT::TINYINT, 1, LT::UTINYINT},
-        {LT::TINYINT, 2, LT::USMALLINT},
-        {LT::TINYINT, 3, LT::UINTEGER},
-        {LT::TINYINT, 4, LT::UINTEGER},
-        {LT::TINYINT, 5, LT::UBIGINT},
-        {LT::TINYINT, 6, LT::UBIGINT},
-        {LT::TINYINT, 7, LT::UBIGINT},
-        {LT::TINYINT, 8, LT::UBIGINT},
-        {LT::TINYINT, 9, LT::UHUGEINT},
-        {LT::TINYINT, 10, LT::UHUGEINT},
-        {LT::TINYINT, 11, LT::UHUGEINT},
-        {LT::TINYINT, 12, LT::UHUGEINT},
-        {LT::TINYINT, 13, LT::UHUGEINT},
-        {LT::TINYINT, 14, LT::UHUGEINT},
-        {LT::TINYINT, 15, LT::UHUGEINT},
-        {LT::TINYINT, 16, LT::UHUGEINT},
-
-        {LT::UTINYINT, 1, LT::UTINYINT},
-        {LT::UTINYINT, 2, LT::USMALLINT},
-        {LT::UTINYINT, 3, LT::UINTEGER},
-        {LT::UTINYINT, 4, LT::UINTEGER},
-        {LT::UTINYINT, 5, LT::UBIGINT},
-        {LT::UTINYINT, 6, LT::UBIGINT},
-        {LT::UTINYINT, 7, LT::UBIGINT},
-        {LT::UTINYINT, 8, LT::UBIGINT},
-        {LT::UTINYINT, 9, LT::UHUGEINT},
-        {LT::UTINYINT, 10, LT::UHUGEINT},
-        {LT::UTINYINT, 11, LT::UHUGEINT},
-        {LT::UTINYINT, 12, LT::UHUGEINT},
-        {LT::UTINYINT, 13, LT::UHUGEINT},
-        {LT::UTINYINT, 14, LT::UHUGEINT},
-        {LT::UTINYINT, 15, LT::UHUGEINT},
-        {LT::UTINYINT, 16, LT::UHUGEINT},
-    };
-
-    // Loop through the array signatures and add functions
-    for (const auto& func : encoding_array_signatures) {
-        hilbert_encode.AddFunction(SF({LogicalType::ARRAY(func.element_type, func.dimension)}, func.return_type, lindelEncodeArrayFunc, lindelEncodeArrayBind));
-        morton_encode.AddFunction(SF({LogicalType::ARRAY(func.element_type, func.dimension)}, func.return_type, lindelEncodeArrayFunc, lindelEncodeArrayBind));
-    }
+    hilbert_encode.AddFunction(SF({LogicalType::ARRAY(LogicalType::ANY)}, LogicalType::ANY, lindelEncodeArrayFunc, lindelEncodeArrayBind));
+    morton_encode.AddFunction(SF({LogicalType::ARRAY(LogicalType::ANY)}, LogicalType::ANY, lindelEncodeArrayFunc, lindelEncodeArrayBind));
 
     ExtensionUtil::RegisterFunction(instance, hilbert_encode);
     ExtensionUtil::RegisterFunction(instance, morton_encode);
