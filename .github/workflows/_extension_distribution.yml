@@ -24,7 +24,7 @@ on:
       exclude_archs:
         required: false
         type: string
-        default: ""
+        default: "osx_x86_64;wasm_x86_64;wasm_arm64"
       # Postfix added to artifact names. Can be used to guarantee unique names when this workflow is called multiple times
       artifact_postfix:
         required: false
@@ -122,15 +122,15 @@ jobs:
           apt-get update -y -qq
           apt-get install -y -qq --fix-missing ninja-build make gcc-multilib g++-multilib libssl-dev wget openjdk-8-jdk zip maven unixodbc-dev libc6-dev-i386 lib32readline6-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext unzip build-essential checkinstall libffi-dev curl libz-dev openssh-client
 
-      # - name: Install Git 2.18.5
-      #   if: ${{ matrix.duckdb_arch == 'linux_amd64' || matrix.duckdb_arch == 'linux_arm64' }}
-      #   run: |
-      #     wget https://github.com/git/git/archive/refs/tags/v2.18.5.tar.gz
-      #     tar xvf v2.18.5.tar.gz
-      #     cd git-2.18.5
-      #     make
-      #     make prefix=/usr install
-      #     git --version
+      - name: Install Git 2.18.5
+        if: ${{ matrix.duckdb_arch == 'linux_amd64' || matrix.duckdb_arch == 'linux_arm64' }}
+        run: |
+          wget https://github.com/git/git/archive/refs/tags/v2.18.5.tar.gz
+          tar xvf v2.18.5.tar.gz
+          cd git-2.18.5
+          make
+          make prefix=/usr install
+          git --version
 
       - uses: actions/checkout@v3
         with:
@@ -166,7 +166,7 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          components: rustfmt, clippy
+          cache: false
 
       - name: Build extension
         env:
@@ -235,7 +235,7 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          components: rustfmt, clippy
+          cache: false
 
       - name: Build extension
         shell: bash
@@ -313,7 +313,7 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          components: rustfmt, clippy
+          cache: false
 
       - name: Build & test extension
         env:
