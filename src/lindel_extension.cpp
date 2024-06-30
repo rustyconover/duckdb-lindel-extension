@@ -232,7 +232,7 @@ inline void lindelDecodeArrayFun(DataChunk &args, ExpressionState &state, Vector
 	auto left_data_16 = FlatVector::GetData<uint16_t>(left);
 	auto left_data_32 = FlatVector::GetData<uint32_t>(left);
 	auto left_data_64 = FlatVector::GetData<uint64_t>(left);
-	auto left_data_128 = FlatVector::GetData<__uint128_t>(left);
+	auto left_data_128 = FlatVector::GetData<uhugeint_t>(left);
 
     // So the output type changes based on the number of inputs and the type of inputs.
 
@@ -497,7 +497,7 @@ inline void lindelEncodeArrayFunc(DataChunk &args, ExpressionState &state, Vecto
     auto result_data_u16 = FlatVector::GetData<uint16_t>(result);
     auto result_data_u32 = FlatVector::GetData<uint32_t>(result);
     auto result_data_u64 = FlatVector::GetData<uint64_t>(result);
-    auto result_data_u128 = FlatVector::GetData<__uint128_t>(result);
+    auto result_data_u128 = FlatVector::GetData<uhugeint_t>(result);
 
 	for (idx_t i = 0; i < args.size(); i++) {
 		auto left_idx = left_format.sel->get_index(i);
