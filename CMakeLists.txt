@@ -46,7 +46,7 @@ execute_process(
     COMMAND rustup target list --installed
     OUTPUT_VARIABLE RUST_TARGETS
 )
-string(FIND "${RUST_TARGETS}" "wasm32-unknown-unknown" WASM_TARGET_FOUND)
+string(FIND "${RUST_TARGETS}" "wasm32-unknown-emscripten" WASM_TARGET_FOUND)
 
 if (NOT WASM_TARGET_FOUND EQUAL -1)
   set(Rust_CARGO_TARGET "wasm32-unknown-emscripten")
