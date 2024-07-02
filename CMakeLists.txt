@@ -5,6 +5,11 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED 1)
 
 
+set(prefix_to_check "wasm")
+# Get the length of the prefix
+string(LENGTH "${prefix_to_check}" prefix_length)
+# Extract the prefix from the example_string
+string(SUBSTRING "${DUCKDB_PLATFORM}" 0 ${prefix_length} extracted_platform_prefix)
 
 # Propagate arch to rust build for CI
 set(Rust_CARGO_TARGET "")
@@ -35,14 +40,14 @@ elseif(WIN32)
 #    elseif (MSVC AND "${OS_ARCH}" STREQUAL "amd64")
 #        set(Rust_CARGO_TARGET "x86_64-pc-windows-msvc")
 #    endif()
-else()
+elseif("${extracted_platform_prefix}" STREQUAL "wasm")
   set(Rust_CARGO_TARGET "wasm32-unknown-emscripten")
 endif()
 
 # We currently only support the predefined targets.
-if ("${Rust_CARGO_TARGET}" STREQUAL "")
-    message(FATAL_ERROR "Failed to detect the correct platform")
-endif()
+#if ("${Rust_CARGO_TARGET}" STREQUAL "")
+#    message(FATAL_ERROR "Failed to detect the correct platform")
+#endif()
 
 
 include(FetchContent)
