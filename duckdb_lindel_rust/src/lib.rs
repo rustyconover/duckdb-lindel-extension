@@ -340,37 +340,3 @@ generic_encode_u64_var!(morton_encode_u64_var, lindel::morton_encode);
 
 #[cfg(test)]
 mod tests {}
-
-// Setup the global allocator to use the duckdb internal malloc and free functions.
-extern "C" {
-    #[doc = "Allocate `size` bytes of memory using the duckdb internal malloc function. Any memory allocated in this manner\nshould be freed using `duckdb_free`.\n\n size: The number of bytes to allocate.\n returns: A pointer to the allocated memory region."]
-    pub fn duckdb_malloc(size: usize) -> *mut ::std::os::raw::c_void;
-}
-extern "C" {
-    #[doc = "Free a value returned from `duckdb_malloc`, `duckdb_value_varchar`, `duckdb_value_blob`, or\n`duckdb_value_string`.\n\n ptr: The memory region to de-allocate."]
-    pub fn duckdb_free(ptr: *mut ::std::os::raw::c_void);
-}
-
-use std::alloc::{GlobalAlloc, Layout};
-
-// Implement a Rust allocator that calls duckdb_malloc and duckdb_free and use it as the global allocator.
-struct DuckDBAllocator {}
-
-impl DuckDBAllocator {
-    const fn new() -> Self {
-        DuckDBAllocator {}
-    }
-}
-
-unsafe impl GlobalAlloc for DuckDBAllocator {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        duckdb_malloc(layout.size()) as *mut u8
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
-        duckdb_free(ptr as *mut c_void);
-    }
-}
-
-#[global_allocator]
-static A: DuckDBAllocator = DuckDBAllocator::new();
