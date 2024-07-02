@@ -44,6 +44,10 @@ elseif("${extracted_platform_prefix}" STREQUAL "wasm")
   set(Rust_CARGO_TARGET "wasm32-unknown-emscripten")
 endif()
 
+message(STATUS "DUCKDB_PLATFORM: ${DUCKDB_PLATFORM}")
+message(STATUS "OS_ARCH: ${OS_ARCH}")
+message(STATUS "OS_NAME: ${OS_NAME}")
+message(STATUS "Rust_CARGO_TARGET: ${Rust_CARGO_TARGET}")
 # We currently only support the predefined targets.
 #if ("${Rust_CARGO_TARGET}" STREQUAL "")
 #    message(FATAL_ERROR "Failed to detect the correct platform")
