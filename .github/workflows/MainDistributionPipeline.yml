@@ -19,6 +19,7 @@ jobs:
       duckdb_version: v1.0.0
       extension_name: lindel
       enable_rust: true
+      exclude_archs: "wasm_mvp;wasm_eh;wasm_threads"
 
   duckdb-stable-deploy:
     name: Deploy extension binaries
