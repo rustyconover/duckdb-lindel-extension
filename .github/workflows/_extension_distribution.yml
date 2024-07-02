@@ -168,9 +168,6 @@ jobs:
         with:
           cache: false
 
-      - name: Get CMake
-        uses: symbitic/install-cmake@master
-
       - name: Build extension
         env:
           GEN: ninja
