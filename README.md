@@ -6,6 +6,17 @@
 
 This `lindel` extension adds functions for the [linearization](https://en.wikipedia.org/wiki/Linearization) and delinearization of numeric arrays in [DuckDB](https://www.duckdb.org).  It allows you to order multi-dimensional data using space-filling curves.
 
+## Installation
+
+**`lindel` is a [DuckDB Community Extension](https://github.com/duckdb/community-extensions).**
+
+You can now use this by using this SQL:
+
+```sql
+install lindel from community;
+load lindel;
+```
+
 ## What is linearization?
 
 <image align="right" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Hilbert-curve_rounded-gradient-animated.gif/440px-Hilbert-curve_rounded-gradient-animated.gif" alt="An animation of the Hilbert Curve from Wikipedia" width="200px"/>
@@ -106,6 +117,9 @@ Output is limited to a 128-bit `UHUGEINT`. The input array size is validated to 
 ### Encoding examples
 
 ```sql
+install lindel from community;
+load lindel;
+
 with elements as (
   select * as id from range(3)
 )
@@ -154,6 +168,9 @@ elements as a cross join elements as b;
 Encoding doesn't only work with integers it can also be used with floats.
 
 ```sql
+install lindel from community;
+load lindel;
+
 -- Encode two 32-bit floats into one uint64
 select hilbert_encode([37.8, .2]::float[2]) as hilbert;
 ┌─────────────────────┐
