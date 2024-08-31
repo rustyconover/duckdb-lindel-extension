@@ -5,7 +5,7 @@
 
 version: 2
 updates:
-  - package-ecosystem: "Cargo" # See documentation for possible values
+  - package-ecosystem: "cargo" # See documentation for possible values
     directory: "/duckdb_lindel_rust" # Location of package manifests
     schedule:
       interval: "daily"
