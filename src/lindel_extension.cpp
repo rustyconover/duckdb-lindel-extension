@@ -3,6 +3,7 @@
 #include "lindel_extension.hpp"
 #include "duckdb.hpp"
 #include "duckdb/common/exception.hpp"
+#include "duckdb/common/optional_idx.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/function/scalar_function.hpp"
 #include "duckdb/planner/expression/bound_function_expression.hpp"
@@ -680,8 +681,8 @@ static void LoadInternal(DatabaseInstance &instance) {
 
     using SF = ScalarFunction; // Alias for ScalarFunction
 
-    hilbert_encode.AddFunction(SF({LogicalType::ARRAY(LogicalType::ANY)}, LogicalType::ANY, lindelEncodeArrayFunc, lindelEncodeArrayBind));
-    morton_encode.AddFunction(SF({LogicalType::ARRAY(LogicalType::ANY)}, LogicalType::ANY, lindelEncodeArrayFunc, lindelEncodeArrayBind));
+    hilbert_encode.AddFunction(SF({LogicalType::ARRAY(LogicalType::ANY, optional_idx::Invalid())}, LogicalType::ANY, lindelEncodeArrayFunc, lindelEncodeArrayBind));
+    morton_encode.AddFunction(SF({LogicalType::ARRAY(LogicalType::ANY, optional_idx::Invalid())}, LogicalType::ANY, lindelEncodeArrayFunc, lindelEncodeArrayBind));
 
     ExtensionUtil::RegisterFunction(instance, hilbert_encode);
     ExtensionUtil::RegisterFunction(instance, morton_encode);
@@ -699,14 +700,14 @@ static void LoadInternal(DatabaseInstance &instance) {
 
     for (const auto &decodable_type : types_that_can_be_decoded) {
         hilbert_decode.AddFunction(
-            ScalarFunction({decodable_type, LogicalType::UTINYINT, LogicalType::BOOLEAN, LogicalType::BOOLEAN}, LogicalType::ARRAY(LogicalType::ANY),
+            ScalarFunction({decodable_type, LogicalType::UTINYINT, LogicalType::BOOLEAN, LogicalType::BOOLEAN}, LogicalType::ARRAY(LogicalType::ANY, optional_idx::Invalid()),
             lindelDecodeArrayFun,
             lindelDecodeToArrayBind
             )
         );
 
         morton_decode.AddFunction(
-            ScalarFunction({decodable_type, LogicalType::UTINYINT, LogicalType::BOOLEAN, LogicalType::BOOLEAN}, LogicalType::ARRAY(LogicalType::ANY),
+            ScalarFunction({decodable_type, LogicalType::UTINYINT, LogicalType::BOOLEAN, LogicalType::BOOLEAN}, LogicalType::ARRAY(LogicalType::ANY, optional_idx::Invalid()),
             lindelDecodeArrayFun,
             lindelDecodeToArrayBind
             )
