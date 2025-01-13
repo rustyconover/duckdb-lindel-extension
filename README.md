@@ -302,6 +302,40 @@ For the DuckDB extension to call the Rust code a tool called `cbindgen` is used 
 
 The headers can be updated by running `make rust_binding_headers`.
 
+#### Building on macOS
+
+Example setup + build steps for macOS users:
+
+```sh
+# Remove rust if previously installed via brew 
+brew uninstall rust
+
+# Install rustup + cbindgen
+# (use rustup to switch versions of Rust without extra fuss)
+brew install cbindgen rustup
+
+# Install nightly rust toolchain
+rustup toolchain install nightly
+
+# Initialize rustup
+# Zsh users: customize installation, answer n to "Modify PATH variable?",
+# and continue with defaults for everything else
+rustup-init
+
+# OPTIONAL step for zsh users: add rust + cargo env setup to zshrc:
+echo '. "$HOME/.cargo/env"' >> ~/.zshrc 
+
+# Use rustc nightly version by default
+rustup default nightly
+
+# Build headers
+make rust_binding_headers
+
+# Using ninja for theorhetical parallel build steps (untested!)
+# Set CMAKE_BUILD_PARALLEL_LEVEL to the number of cores on your machine
+GEN=ninja CMAKE_BUILD_PARALLEL_LEVEL=8 make
+```
+
 ### Build steps
 Now to build the extension, run:
 ```sh
