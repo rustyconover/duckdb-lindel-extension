@@ -11,6 +11,12 @@ string(LENGTH "${prefix_to_check}" prefix_length)
 # Extract the prefix from the example_string
 string(SUBSTRING "${DUCKDB_PLATFORM}" 0 ${prefix_length} extracted_platform_prefix)
 
+
+execute_process(
+    COMMAND rustup target list --installed
+    OUTPUT_VARIABLE RUST_TARGETS
+)
+
 # Propagate arch to rust build for CI
 set(Rust_CARGO_TARGET "")
 if("${OS_NAME}" STREQUAL "linux")
@@ -47,10 +53,6 @@ elseif(WIN32)
    endif()
 endif()
 
-execute_process(
-    COMMAND rustup target list --installed
-    OUTPUT_VARIABLE RUST_TARGETS
-)
 string(FIND "${RUST_TARGETS}" "wasm32-unknown-emscripten" WASM_TARGET_FOUND)
 
 if (NOT WASM_TARGET_FOUND EQUAL -1)
